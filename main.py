@@ -19,5 +19,7 @@ if __name__ == '__main__':
 l = ("deez", "nutz")
 m = ("deez",)
 print(set(sorted(l)))
-p = [5,4,6,1]
-print(set(sorted(p)))
+p = [{5, 4, 6, 1}]
+print(sorted(p))
+q = (1,)
+print(q[:-1], q[-1])

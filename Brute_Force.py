@@ -86,14 +86,12 @@ def join(itemset_list, db):
 
     :param itemset: list of sorted itemset tuples
     :param db: dictionary database of transactions
-    :return:list of tuples of k-itemsets
+    :return:list of k-itemset tuples
     """
     joined_list = []
     for i in itemset_list:
         for j in itemset_list:
-            if i >= j:
-                continue
-            if i < j:
+            if i[:-1] == j[:-1] and i[-1] < j[-1]:
                 joined_list.append(i + (j[-1],))
     return sorted(joined_list)
 
@@ -109,7 +107,7 @@ def prune(candidate_list, db, supp_count=2):
 
     :param candidate_list: list of joined itemset tuples
     :param db: dictionary database of transactions
-    :return: list of frequent itemset sets
+    :return: list of frequent itemset tuples
     """
     pruned_list = []
     for i in candidate_list:
@@ -146,10 +144,10 @@ def gen_freq_itemsets(db, supp_count=2):
 
 
 print("Database 1:\n", gen_freq_itemsets(db1))
-# print("Database 2:\n", gen_freq_itemsets(db2))
-# print("Database 3:\n", gen_freq_itemsets(db3))
-# print("Database 4:\n", gen_freq_itemsets(db4))
-# print("Database 5:\n", gen_freq_itemsets(db5))
+print("Database 2:\n", gen_freq_itemsets(db2))
+print("Database 3:\n", gen_freq_itemsets(db3))
+print("Database 4:\n", gen_freq_itemsets(db4))
+print("Database 5:\n", gen_freq_itemsets(db5))
 
 
 def generate_ass_rules(itemset_list, db):
