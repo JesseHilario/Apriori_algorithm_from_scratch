@@ -68,3 +68,5 @@ db2 = make_db(2)
 db3 = make_db(3)
 db4 = make_db(4)
 db5 = make_db(5)
+
+print(f"Database 1: \n{db1}\n\nDatabase 2: \n{db2}\n\nDatabase 3:\n{db3}\n\nDatabase 4:\n{db4}\n\nDatabase 5:\n{db5}")

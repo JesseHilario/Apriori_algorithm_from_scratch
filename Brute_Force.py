@@ -6,161 +6,148 @@ start = default_timer()
 
 
 
+def join(itemset_list):
+    """
+ Finds all possible k-itemsets from
+ list of (k-1)-itemsets.
 
-set_items = [{i} for i in items]
-
-"""
-Making each item in the items list a set:
-
-Each list of frequent itemssets, L, is a list of 
-sets, i.e., a list of itemsets. 
-
-Each list of candidate itemsets, C, is a list of tuples.
-This allows for comparing lexicographical order as a list
-of sets cannot be sorted as a list of tuples can.
-"""
+ :param itemset_list: list of (k-1)-itemsets
+ :return: list of k-itemsets
+ """
+    joined_list = []
+    for i in itemset_list:
+        for j in itemset_list:
+            if len(i ^ j) == 2:
+                if i | j not in joined_list:
+                    joined_list.append(i | j)
+    return joined_list
 
 
 
 def support(itemset, db):
     """
-    Finds absolute and relative support of a
-    k-itemset where k >= 0.
+ Scans database to find support level of an itemset. Returns tuple of absolute support and relative support
 
-    :param itemset: a *single* set of k-itemset
-    :param db: dictionary database of transactions
-    :return: count, support
-    """
+ :param itemset:a set of itemset
+ :param db:dictionary database of transactions
+ :return:tuple of support count and support level
+ """
     count = 0
-    total_trans = 20
-    for i in db.values():
-        if itemset <= i:
+    total_trans = len(db)
+    for transaction in db.values():
+        if itemset <= transaction:
             count += 1
-    return count, count/total_trans
+        # itemset is subset of transaction, increment count
+    return count, count / total_trans
 
 
-
-def is_frequent(itemset, db, supp_count=2):
+def is_frequent(itemset, db, min_supp=.1):
     """
-    Uses support() function to decide if any k-itemset
-    meets desired support count. Here, minimum frequency
-    must be 2.
+ Uses support() function to check if itemset meets user-specified minimum support level.
 
-    :param itemset: a single set of k-itemset
-    :param db: dictionary database of transactions
-    :param supp_count: set minimum count
-    :return: boolean value
+ :param itemset:set of itemset
+ :param db:dictionary database of transactions
+ :param min_supp:minimum support
+ :return:boolean variable
+ """
+    itemset_support = support(itemset, db)
+    return itemset_support[1] >= min_supp
+
+
+def confidence(left_itemset, right_itemset, db):
     """
-    i = support(itemset, db)
-    count = i[0]
-    return count >= supp_count
+ Calculates confidence level.
+
+ :param left_itemset:left of association rule arrow
+ :param right_itemset:right of association rule arrow
+ :param db:dictionary database of transactions
+ :return:confidence level
+ """
+    denom = support(left_itemset, db)
+    numer = support(right_itemset.union(left_itemset), db)[1]
+    return numer / denom[1]
 
 
-
-def find_frequent_one_itemsets(db, supp_count=2):
+def is_confident(left_itemset, right_itemset, db, min_conf=.5):
     """
-    Uses preset set_items set to return a new set
-    of frequent lexicographically-ordered 1-itemsets.
+ Uses confidence() function to check if rule meets a user-specified minimum confidence level.
 
-    :param db: dictionary database of transactions
-    :return: list of tuples of frequent 1-itemsets
+ :param left_itemset:left of association rule arrow
+ :param right_itemset:right of association rule arrow
+ :param db:dictionary database of transactions
+ :param min_conf:minimum confidence level
+ :return:boolean value
+ """
+    itemset_confidence = confidence(left_itemset, right_itemset, db)
+    return itemset_confidence >= min_conf
+
+
+def print_possible_k_itemsets(k, candidate_itemsets):
     """
-    itemset = []
-    for i in set_items:
-        if is_frequent(i, db, supp_count):
-            itemset.append(tuple(i))
-    itemset = sorted(itemset)
-    return itemset
+ Prints lengths of candidate k-itemsets. Does not print whole itemset as would be too cumbersome
+
+ :param k:size of itemset
+ :param candidate_itemsets:
+ :return:size of list of itemsets for k-size itemset
+ """
+    # print(f"\n\nPossible {k}-itemsets:\n", candidate_itemsets, len(candidate_itemsets))
+    print("\n\nLength of", k, ": ", len(candidate_itemsets))
 
 
-
-db1_L1 = find_frequent_one_itemsets(db1)
-print(db1_L1)
-
-
-
-def join(itemset_list, db):
+def brute_force(db, min_supp=.1, min_conf=.5):
     """
-    Joins list of lexicographically sorted
-    (k-1)-itemsets to create new list of k-itemsets.
+ Implementation of brute force algorithm.
 
-    :param itemset: list of sorted itemset tuples
-    :param db: dictionary database of transactions
-    :return:list of k-itemset tuples
-    """
-    joined_list = []
-    for i in itemset_list:
-        for j in itemset_list:
-            if i[:-1] == j[:-1] and i[-1] < j[-1]:
-                joined_list.append(i + (j[-1],))
-    return sorted(joined_list)
+ :param db:dictionary database of transactions
+ :param min_supp:float to set minimum support
+ :param min_conf:float to set minimum confidence
+ :return:list of sets of all frequent itemsets. integer of length of list
+ """
+    candidate_itemsets = []
+    frequent_itemsets = ["placeholder"]
+    total_frequent_itemsets = []
+    for transaction in db.values():
+        for i, j in enumerate(transaction):
+            if {j} not in candidate_itemsets:
+                candidate_itemsets.append({j})
+                # print(j)
+    k = 0
 
+    while len(frequent_itemsets) > 0:
+        frequent_itemsets = []
+        k += 1
+        print_possible_k_itemsets(k, candidate_itemsets)
+        for itemset in candidate_itemsets:
+            if is_frequent(itemset, db, min_supp):
+                frequent_itemsets.append(itemset)
+                total_frequent_itemsets.append(itemset)
+        candidate_itemsets = join(candidate_itemsets)
+    print("\nFrequent Itemsets:\n",total_frequent_itemsets)
 
-db1_C2 = join(db1_L1, db1)
-print("CANDIDATES \n",db1_C2)
+    print("\nAssociation Rules:")
 
+    for itemset in total_frequent_itemsets:
+        if len(itemset) < 1:
+            continue
+        for i in itemset:
+            left = {i}
+            right = itemset - left
+            if len(right) == 0:
+                break
+            print(f"{left}-->{right}[{support(itemset,db)[1]},{confidence(left,right,db)} has {is_confident(left,right,db,min_conf)} confidence]")
+            # print(f"{right}-->{left}[{support(itemset,db)[1]},{confidence(right,left,db)} has {is_confident(right,left,db,min_conf)} confidence]")
 
-def prune(candidate_list, db, supp_count=2):
-    """
-    Prunes a candidate last and returns only itemsets
-    that meet a specified minimum support level.
-
-    :param candidate_list: list of joined itemset tuples
-    :param db: dictionary database of transactions
-    :return: list of frequent itemset tuples
-    """
-    pruned_list = []
-    for i in candidate_list:
-        if is_frequent(set(i),db,supp_count):
-            pruned_list.append(i)
-    return sorted(pruned_list)
-
-db1_L2 = prune(db1_C2, db1)
-print("PRUNED LIST: \n", db1_L2)
-
-
-
-def gen_freq_itemsets(db, supp_count=2):
-    """
-    Generates frequent k-itemsets starting with 1-itemsets.
-    The while loop stops when no more frequent k-itemsets
-    can be generated.
-
-    :param db: dictionary database of transactions
-    :param supp_count: set support count, default 2
-    :return: list of lists of tuples, where inner lists represent
-    frequent 1-itemsets, 2-itemsets,...to k-itemsets. Each
-    innermost tuple represents one frequent itemset.
-    """
-    freq_itemsets = []
-    l = find_frequent_one_itemsets(db, supp_count)
-    i = len(l)
-    while i > 0:
-        freq_itemsets.append(l)
-        c = join(l, db)
-        l = prune(c, db, supp_count)
-        i = len(l)
-    return freq_itemsets
+    return total_frequent_itemsets, len(total_frequent_itemsets)
 
 
-print("Database 1:\n", gen_freq_itemsets(db1))
-print("Database 2:\n", gen_freq_itemsets(db2))
-print("Database 3:\n", gen_freq_itemsets(db3))
-print("Database 4:\n", gen_freq_itemsets(db4))
-print("Database 5:\n", gen_freq_itemsets(db5))
 
 
-def generate_ass_rules(itemset_list, db):
-
-    support()
-
-# db1_C3 = join(db1_L2, db1)
-# db1_L3 = join()
-
-def brute_force(item_list, db):
+# print("\n\n\n\nBRUTE FORCE for db1:\n\n", brute_force(db1,min_supp=.1,min_conf=.5))
+# print("\n\n\n\nBRUTE FORCE for db2:\n\n", brute_force(db2,min_supp=.2,min_conf=.3))
+# print("\n\n\n\nBRUTE FORCE for db3\n\n", brute_force(db3,min_supp=.12,min_conf=.2))
+# print("\n\n\n\nBRUTE FORCE for db4\n\n", brute_force(db4, min_supp=.15,min_conf=.5))
+print("\n\n\n\nBRUTE FORCE for db5\n\n", brute_force(db5,min_supp=.1,min_conf=.3))
 
 
-    print("")
-
-
-print(default_timer() - start)
+time = default_timer() - start
+print(time, "seconds,\n", time / 60, "minutes")
